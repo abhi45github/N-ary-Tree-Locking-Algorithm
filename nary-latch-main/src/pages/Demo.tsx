@@ -6,9 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NaryTreeLock, TreeNode, LockResult } from "@/lib/nary-tree-lock";
-import { Lock, Unlock, ArrowUpCircle, RotateCcw, Play } from "lucide-react";
+import { Lock, Unlock, ArrowUpCircle, RotateCcw, Play, Home } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import TreeBuilder from "@/components/TreeBuilder";
+import CodeViewer from "@/components/CodeViewer";
 
 const Demo = () => {
+  const navigate = useNavigate();
   const [tree] = useState(() => new NaryTreeLock());
   const [treeState, setTreeState] = useState<any>(null);
   const [selectedNode, setSelectedNode] = useState<number | null>(null);
@@ -23,6 +27,12 @@ const Demo = () => {
     tree.buildTree(names, parents);
     updateTreeState();
   }, []);
+
+  const handleBuildTree = (names: string[], parents: number[]) => {
+    handleReset();
+    tree.buildTree(names, parents);
+    updateTreeState();
+  };
 
   const updateTreeState = () => {
     setTreeState(tree.getTreeState());
@@ -132,13 +142,21 @@ const Demo = () => {
     <div className="min-h-screen bg-background text-foreground p-6">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-8 text-center space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
-            Interactive N-ary Tree Locking Demo
-          </h1>
-          <p className="text-muted-foreground">
-            Test the O(log N) lock/unlock algorithm in real-time
-          </p>
+        <div className="mb-8 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-center flex-1">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+                Interactive N-ary Tree Locking Demo
+              </h1>
+              <p className="text-muted-foreground">
+                Test the O(log N) lock/unlock algorithm in real-time
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              <Home className="w-4 h-4 mr-2" />
+              Home
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -323,6 +341,16 @@ const Demo = () => {
             </div>
           </div>
         </Card>
+
+        {/* Tree Builder */}
+        <div className="mt-6">
+          <TreeBuilder onBuildTree={handleBuildTree} />
+        </div>
+
+        {/* Code Viewer */}
+        <div className="mt-6">
+          <CodeViewer />
+        </div>
       </div>
     </div>
   );
