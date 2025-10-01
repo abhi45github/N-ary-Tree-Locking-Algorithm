@@ -1,0 +1,30 @@
+# Build artifacts
+*.o
+*.obj
+*.exe
+tree_lock
+tree_lock.exe
+
+# CMake
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiler outputs
+*.out
+*.log
+a.out
