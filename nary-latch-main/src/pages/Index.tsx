@@ -1,8 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Play, Github } from "lucide-react";
 import heroImage from "@/assets/hero-tree.jpg";
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
@@ -32,6 +37,16 @@ const Index = () => {
               <Badge variant="secondary" className="text-base px-4 py-2">C++</Badge>
               <Badge variant="secondary" className="text-base px-4 py-2">Multithreading</Badge>
               <Badge variant="secondary" className="text-base px-4 py-2">Lock-free</Badge>
+            </div>
+            <div className="flex gap-4 justify-center animate-in fade-in slide-in-from-bottom-7 duration-1000 delay-500 mt-8">
+              <Button size="lg" onClick={() => navigate('/demo')} className="text-lg px-8 py-6">
+                <Play className="w-5 h-5 mr-2" />
+                Try Interactive Demo
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => window.open('https://github.com/abhi45github/N-ary-Tree-Locking-Algorithm', '_blank')} className="text-lg px-8 py-6">
+                <Github className="w-5 h-5 mr-2" />
+                View on GitHub
+              </Button>
             </div>
           </div>
         </div>
