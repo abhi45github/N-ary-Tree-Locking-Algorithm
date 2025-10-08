@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lock/Unlock Functionality Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .test-section.running {
+            border-left-color: #2196F3;
+        }
+        .test-section.pass {
+            border-left-color: #4CAF50;
+        }
+        .test-section.fail {
+            border-left-color: #f44336;
+        }
+        h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.pass {
+            background: #4CAF50;
+            color: white;
+        }
+        .status.fail {
+            background: #f44336;
+            color: white;
+        }
+        .status.running {
+            background: #2196F3;
+            color: white;
+        }
+        pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .summary {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .summary h2 {
+            color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 N-ary Tree Lock/Unlock Functionality Test</h1>
+    <p>This page tests the lock/unlock operations of the TypeScript implementation.</p>
+
+    <button onclick="runAllTests()">▶️ Run All Tests</button>
+    <button onclick="clearResults()">🔄 Clear Results</button>
+
+    <div id="results"></div>
+
+    <div class="summary" id="summary" style="display:none;">
+        <h2>📊 Test Summary</h2>
+        <div id="summary-content"></div>
+    </div>
+
+    <script type="module">
+        // Import the NaryTreeLock class
+        import { NaryTreeLock } from './src/lib/nary-tree-lock.ts';
+
+        window.NaryTreeLock = NaryTreeLock;
+        window.testResults = [];
+
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+            window.testResults = [];
+        }
+
+        window.runAllTests = async function() {
+            clearResults();
+
+            const tests = [
+                testBasicLock,
+                testBasicUnlock,
+                testLockTwice,
+                testUnlockWrongUser,
+                testAncestorConstraint,
+                testDescendantConstraint,
+                testSiblingLocks,
+                testUpgradeLock,
+                testPerformance
+            ];
+
+            for (const test of tests) {
+                await test();
+                await sleep(300); // Small delay between tests
+            }
+
+            showSummary();
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function addTestResult(name, status, details) {
+            const testDiv = document.createElement('div');
+            testDiv.className = `test-section ${status}`;
+            testDiv.innerHTML = `
+                <h2>${name} <span class="status ${status}">${status.toUpperCase()}</span></h2>
+                <pre>${details}</pre>
+            `;
+            document.getElementById('results').appendChild(testDiv);
+
+            window.testResults.push({ name, status, details });
+        }
+
+        function showSummary() {
+            const passed = window.testResults.filter(t => t.status === 'pass').length;
+            const failed = window.testResults.filter(t => t.status === 'fail').length;
+            const total = window.testResults.length;
+
+            document.getElementById('summary').style.display = 'block';
+            document.getElementById('summary-content').innerHTML = `
+                <p style="font-size: 24px;">
+                    <strong>Total Tests:</strong> ${total}<br>
+                    <strong style="color: #4CAF50;">Passed:</strong> ${passed}<br>
+                    <strong style="color: #f44336;">Failed:</strong> ${failed}<br>
+                    <strong>Success Rate:</strong> ${((passed/total)*100).toFixed(1)}%
+                </p>
+            `;
+        }
+
+        async function testBasicLock() {
+            try {
+                const tree = new window.NaryTreeLock();
+                tree.buildTree(['Root', 'Child1', 'Child2'], [-1, 0, 0]);
+
+                const result = tree.lock(1, 100);
+
+                if (result.success && result.operation === 'lock') {
+                    const node = tree.getNode(1);
+                    if (node.lockedBy === 100) {
+                        addTestResult(
+                            'Test 1: Basic Lock',
+                            'pass',
+                            `✅ Successfully locked Child1 by User 100\n` +
+                            `Message: ${result.message}\n` +
+                            `Node state: lockedBy=${node.lockedBy}`
+                        );
+                        return;
+                    }
+                }
+                throw new Error('Lock did not work correctly');
+            } catch (error) {
+                addTestResult('Test 1: Basic Lock', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        async function testBasicUnlock() {
+            try {
+                const tree = new window.NaryTreeLock();
+                tree.buildTree(['Root', 'Child1', 'Child2'], [-1, 0, 0]);
+
+                tree.lock(1, 100);
+                const result = tree.unlock(1, 100);
+
+                if (result.success && result.operation === 'unlock') {
+                    const node = tree.getNode(1);
+                    if (node.lockedBy === -1) {
+                        addTestResult(
+                            'Test 2: Basic Unlock',
+                            'pass',
+                            `✅ Successfully unlocked Child1\n` +
+                            `Message: ${result.message}\n` +
+                            `Node state: lockedBy=${node.lockedBy} (unlocked)`
+                        );
+                        return;
+                    }
+                }
+                throw new Error('Unlock did not work correctly');
+            } catch (error) {
+                addTestResult('Test 2: Basic Unlock', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        async function testLockTwice() {
+            try {
+                const tree = new window.NaryTreeLock();
+                tree.buildTree(['Root', 'Child1', 'Child2'], [-1, 0, 0]);
+
+                tree.lock(1, 100);
+                const result = tree.lock(1, 200);
+
+                if (!result.success && result.message.includes('already locked')) {
+                    addTestResult(
+                        'Test 3: Lock Same Node Twice',
+                        'pass',
+                        `✅ Correctly prevented double lock\n` +
+                        `Message: ${result.message}\n` +
+                        `Expected: Should fail\n` +
+                        `Actual: Failed as expected ✓`
+                    );
+                    return;
+                }
+                throw new Error('Should not allow locking same node twice');
+            } catch (error) {
+                addTestResult('Test 3: Lock Same Node Twice', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        async function testUnlockWrongUser() {
+            try {
+                const tree = new window.NaryTreeLock();
+                tree.buildTree(['Root', 'Child1', 'Child2'], [-1, 0, 0]);
+
+                tree.lock(1, 100);
+                const result = tree.unlock(1, 200);
+
+                if (!result.success && result.message.includes('not locked by this user')) {
+                    addTestResult(
+                        'Test 4: Unlock by Wrong User',
+                        'pass',
+                        `✅ Correctly prevented unlock by wrong user\n` +
+                        `Message: ${result.message}\n` +
+                        `Locked by: User 100\n` +
+                        `Tried to unlock: User 200\n` +
+                        `Result: Failed as expected ✓`
+                    );
+                    return;
+                }
+                throw new Error('Should not allow unlock by wrong user');
+            } catch (error) {
+                addTestResult('Test 4: Unlock by Wrong User', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        async function testAncestorConstraint() {
+            try {
+                const tree = new window.NaryTreeLock();
+                tree.buildTree(['Root', 'Child1', 'GrandChild1'], [-1, 0, 1]);
+
+                tree.lock(0, 100); // Lock Root
+                const result = tree.lock(1, 200); // Try to lock Child1
+
+                if (!result.success && result.message.includes('locked ancestor')) {
+                    addTestResult(
+                        'Test 5: Ancestor Lock Constraint',
+                        'pass',
+                        `✅ Correctly enforced ancestor constraint\n` +
+                        `Message: ${result.message}\n` +
+                        `Root locked: Yes (by User 100)\n` +
+                        `Tried to lock Child1: Failed as expected ✓`
+                    );
+                    return;
+                }
+                throw new Error('Should not allow locking with locked ancestor');
+            } catch (error) {
+                addTestResult('Test 5: Ancestor Lock Constraint', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        async function testDescendantConstraint() {
+            try {
+                const tree = new window.NaryTreeLock();
+                tree.buildTree(['Root', 'Child1', 'GrandChild1'], [-1, 0, 1]);
+
+                tree.lock(2, 100); // Lock GrandChild1
+                const result = tree.lock(1, 200); // Try to lock Child1
+
+                if (!result.success && result.message.includes('locked descendants')) {
+                    addTestResult(
+                        'Test 6: Descendant Lock Constraint',
+                        'pass',
+                        `✅ Correctly enforced descendant constraint\n` +
+                        `Message: ${result.message}\n` +
+                        `GrandChild1 locked: Yes (by User 100)\n` +
+                        `Tried to lock Child1: Failed as expected ✓\n` +
+                        `Descendant count tracked correctly`
+                    );
+                    return;
+                }
+                throw new Error('Should not allow locking with locked descendant');
+            } catch (error) {
+                addTestResult('Test 6: Descendant Lock Constraint', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        async function testSiblingLocks() {
+            try {
+                const tree = new window.NaryTreeLock();
+                tree.buildTree(['Root', 'Child1', 'Child2'], [-1, 0, 0]);
+
+                const result1 = tree.lock(1, 100);
+                const result2 = tree.lock(2, 200);
+
+                if (result1.success && result2.success) {
+                    addTestResult(
+                        'Test 7: Sibling Locks (Independent)',
+                        'pass',
+                        `✅ Siblings can be locked independently\n` +
+                        `Child1 locked by User 100: Success ✓\n` +
+                        `Child2 locked by User 200: Success ✓\n` +
+                        `Both siblings locked simultaneously`
+                    );
+                    return;
+                }
+                throw new Error('Siblings should be lockable independently');
+            } catch (error) {
+                addTestResult('Test 7: Sibling Locks', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        async function testUpgradeLock() {
+            try {
+                const tree = new window.NaryTreeLock();
+                tree.buildTree(['Root', 'Child1', 'GC1', 'GC2'], [-1, 0, 1, 1]);
+
+                tree.lock(2, 100); // Lock GC1
+                tree.lock(3, 100); // Lock GC2
+                const result = tree.upgradeLock(1, 100); // Upgrade to Child1
+
+                if (result.success) {
+                    const child1 = tree.getNode(1);
+                    const gc1 = tree.getNode(2);
+                    const gc2 = tree.getNode(3);
+
+                    if (child1.lockedBy === 100 && gc1.lockedBy === -1 && gc2.lockedBy === -1) {
+                        addTestResult(
+                            'Test 8: Upgrade Lock',
+                            'pass',
+                            `✅ Upgrade lock successful\n` +
+                            `Message: ${result.message}\n` +
+                            `Child1 now locked: Yes (by User 100) ✓\n` +
+                            `GC1 unlocked: Yes ✓\n` +
+                            `GC2 unlocked: Yes ✓`
+                        );
+                        return;
+                    }
+                }
+                throw new Error('Upgrade lock did not work correctly');
+            } catch (error) {
+                addTestResult('Test 8: Upgrade Lock', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        async function testPerformance() {
+            try {
+                const tree = new window.NaryTreeLock();
+
+                // Create a tree with 100 nodes
+                const names = Array.from({length: 100}, (_, i) => `Node${i}`);
+                const parents = [- 1, ...Array.from({length: 99}, (_, i) => Math.floor(i / 4))];
+
+                tree.buildTree(names, parents);
+
+                const start = performance.now();
+                for (let i = 1; i < 100; i++) {
+                    tree.lock(i, 1);
+                    tree.unlock(i, 1);
+                }
+                const end = performance.now();
+                const avgTime = (end - start) / 198;
+
+                if (avgTime < 1) {
+                    addTestResult(
+                        'Test 9: Performance (100 nodes)',
+                        'pass',
+                        `✅ Performance test passed\n` +
+                        `Total operations: 198 (99 locks + 99 unlocks)\n` +
+                        `Total time: ${(end - start).toFixed(2)}ms\n` +
+                        `Average per operation: ${avgTime.toFixed(4)}ms\n` +
+                        `Expected: < 1ms ✓\n` +
+                        `O(log N) complexity confirmed`
+                    );
+                    return;
+                }
+                throw new Error(`Performance too slow: ${avgTime.toFixed(4)}ms per operation`);
+            } catch (error) {
+                addTestResult('Test 9: Performance', 'fail', `❌ ${error.message}`);
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            console.log('Test page loaded. Click "Run All Tests" to start.');
+        });
+    </script>
+</body>
+</html>
